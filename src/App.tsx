@@ -24,6 +24,7 @@ import { SponsorModal } from './components/SponsorModal';
 import { QuestionListDrawer } from './components/QuestionListDrawer';
 import { MockExamIntro } from './components/MockExamIntro';
 import { MockScoreReportModal, MockExamItemResult } from './components/MockScoreReportModal';
+import { initTimeEngagementTracker, logEvent } from './utils/analytics';
 import { 
   Play, 
   Pause, 
@@ -62,6 +63,12 @@ export function App() {
   const [recognizedText, setRecognizedText] = useState<string>('');
   const [recognizedWords, setRecognizedWords] = useState<{ word: string; confidence: number }[]>([]);
   const [userRecordedAudioUrl, setUserRecordedAudioUrl] = useState<string>('');
+
+  // 挂载用户活跃停留时长追踪器（30s / 1m / 3m / 5m / 10m 阶梯事件）
+  useEffect(() => {
+    const cleanup = initTimeEngagementTracker();
+    return cleanup;
+  }, []);
   const [scoreReport, setScoreReport] = useState<SGDScoreReport | null>(null);
   const [isScoreModalOpen, setIsScoreModalOpen] = useState<boolean>(false);
 
@@ -300,6 +307,7 @@ export function App() {
       audioRef.current.play();
       setIsAudioPlaying(true);
       setExamStage('audio_playing');
+      logEvent('play_audio');
     }
   };
 
@@ -470,11 +478,13 @@ export function App() {
             spread: 80,
             origin: { y: 0.55 }
           });
+          logEvent('finish_mock_exam');
         }
       } else {
         setScoreReport(report);
         setExamStage('scored');
         setIsScoreModalOpen(true);
+        logEvent('complete_practice');
 
         if (!completedQuestionIds.includes(currentQuestion.id)) {
           const nextIds = [...completedQuestionIds, currentQuestion.id];
@@ -520,6 +530,7 @@ export function App() {
     setCurrentNotes({ topic: '', s1: '', s2: '', s3: '' });
     setShowTemplate(false);
     resetAll();
+    logEvent('start_mock_exam');
 
     setTimeout(() => {
       if (audioRef.current) {
