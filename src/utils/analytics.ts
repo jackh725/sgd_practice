@@ -3,11 +3,18 @@ import { track } from '@vercel/analytics';
 /**
  * 安全自定义埋点上报函数
  */
-export function logEvent(name: string) {
+export function logEvent(name: string, params?: Record<string, any>) {
   try {
     track(name);
+    // 同时同步上报到 Google Analytics (GA4，无参数/事件限制)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof window !== 'undefined' && (window as any).gtag) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).gtag('event', name, params);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((import.meta as any).env?.DEV) {
-      console.log(`[Vercel Analytics] 📊 Event: ${name}`);
+      console.log(`[Analytics] 📊 Event: ${name}`, params || '');
     }
   } catch {
     // 静默降级，确保埋点错误绝不影响业务逻辑
